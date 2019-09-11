@@ -36,6 +36,7 @@ class AtlasMAGETABChecker:
         self.sample2datafile = self.map_samples_to_files()
 
     def run_general_checks(self, logger):
+        """Checks applicable to all experiments"""
 
         # Warn about technical replicates
         if "technical replicate group" not in self.sdrf_comment_values:
@@ -86,7 +87,6 @@ class AtlasMAGETABChecker:
                 self.errors.add("GEN-E05")
 
         # FASTQ_URIs must be valid
-
         if not self.skip_file_checks:
             uri_index = [i for i, c in enumerate(self.sdrf_header)
                          if re.search("fastq_uri", c, flags=re.IGNORECASE)]
@@ -142,7 +142,7 @@ class AtlasMAGETABChecker:
             # Check for supported library construction terms
             if re.search(r"library construction", self.normalise_header(c), flags=re.IGNORECASE):
                 sc_protocol_values = {row[i] for row in self.sdrf}
-                print(sc_protocol_values)
+                logger.debug("Found library construction: \"{}\"".format(", ".join(sc_protocol_values)))
                 if len(sc_protocol_values) > 1:
                     logger.warn("Experiment contains more than 1 single cell library construction protocol.")
                 for protocol in sc_protocol_values:
@@ -153,22 +153,23 @@ class AtlasMAGETABChecker:
             # Not all rows should be "not OK"
             elif re.search(r"single cell (well)? quality", self.normalise_header(c), flags=re.IGNORECASE):
                 well_quality_values = {row[i] for row in self.sdrf}
-                print(well_quality_values)
                 if len(well_quality_values) == 1 and "not OK" in well_quality_values:
                     logger.error("Single cell quality values are all \"not OK\".")
                     self.errors.add("SC-E07")
-            # Technical replicate group values must only contain letters and numbers
+            # Technical replicate group checks
             elif re.search(r"technical replicate group", self.normalise_header(c), flags=re.IGNORECASE):
                 tech_rep_values = {row[i] for row in self.sdrf}
-                wrong_values = {v for v in tech_rep_values if not re.match(r"^[A-Za-z0-9]*$", v)}
-                if len(wrong_values) > 0:
-                    logger.error("Technical replicate group values can only contain letters and numbers: "
-                                 .format(", ".join([str(v) for v in wrong_values])))
-                    self.errors.add("SC-E08")
+                wrong_values = {v for v in tech_rep_values if not re.match(r"^[A-Za-z0-9]+$", v)}
                 # Technical replicate group column should not be empty
-                if len(tech_rep_values) == 1 and "" in tech_rep_values:
+                if len(wrong_values) == 1 and "" in wrong_values:
                     logger.error("Technical replicate group values are all empty.")
                     self.errors.add("SC-E09")
+                # Technical replicate group values must only contain letters and numbers
+                elif len(wrong_values) > 0:
+                    logger.error(
+                        "Technical replicate group values can only contain letters and numbers and cannot be empty: {}"
+                        .format(", ".join([str(v) for v in wrong_values])))
+                    self.errors.add("SC-E08")
 
         # SDRF terms required for droplet experiments
         for protocol in sc_protocol_values:
