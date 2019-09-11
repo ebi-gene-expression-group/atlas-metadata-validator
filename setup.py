@@ -24,7 +24,6 @@ setuptools.setup(
         'atlas_validation.py'
     ],
     include_package_data=True,
-
     install_requires=[
         "requests>=2.20.1"
     ],
