@@ -154,7 +154,6 @@ class AtlasMAGETABChecker:
             # Not all rows should be "not OK"
             elif re.search(r"single cell (well)? quality", self.normalise_header(c), flags=re.IGNORECASE):
                 well_quality_values = {row[i] for row in self.sdrf}
-                print(well_quality_values)
                 if len(well_quality_values) == 1 and "not OK" in well_quality_values:
                     logger.error("Single cell quality values are all \"not OK\".")
                     self.errors.add("SC-E07")
