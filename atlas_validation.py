@@ -78,7 +78,7 @@ def main():
         logger.info("Validation finished with the following error codes: {}".format(", ".join(error_codes)))
         sys.exit(1)
     else:
-        logger.info("Validation was successful!")
+        logger.info("Validation was successful! 🍰")
 
 
 if __name__ == '__main__':

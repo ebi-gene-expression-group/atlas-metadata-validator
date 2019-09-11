@@ -118,7 +118,6 @@ class AtlasMAGETABChecker:
                         logger.error("Additional attribute \"{}\" not found in SDRF.".format(attrib))
                         self.errors.add("SC-E02")
             elif re.search("EAExpectedClusters", k, flags=re.IGNORECASE):
-                print(attribs)
                 for number in attribs:
                     if number and not re.match("^\d+$", number):
                         logger.error("Expected clusters value \"{}\" is not numerical.".format(number))
@@ -143,7 +142,7 @@ class AtlasMAGETABChecker:
             # Check for supported library construction terms
             if re.search(r"library construction", self.normalise_header(c), flags=re.IGNORECASE):
                 sc_protocol_values = {row[i] for row in self.sdrf}
-                print(sc_protocol_values)
+                logger.debug("Found library construction: \"{}\"".format(", ".join(sc_protocol_values)))
                 if len(sc_protocol_values) > 1:
                     logger.warn("Experiment contains more than 1 single cell library construction protocol.")
                 for protocol in sc_protocol_values:
@@ -168,7 +167,7 @@ class AtlasMAGETABChecker:
                 # Technical replicate group values must only contain letters and numbers
                 elif len(wrong_values) > 0:
                     logger.error(
-                        "Technical replicate group values can only contain letters and numbers and cannot be empty: "
+                        "Technical replicate group values can only contain letters and numbers and cannot be empty: {}"
                         .format(", ".join([str(v) for v in wrong_values])))
                     self.errors.add("SC-E08")
 
