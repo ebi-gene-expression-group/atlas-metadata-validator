@@ -36,6 +36,7 @@ class AtlasMAGETABChecker:
         self.sample2datafile = self.map_samples_to_files()
 
     def run_general_checks(self, logger):
+        """Checks applicable to all experiments"""
 
         # Warn about technical replicates
         if "technical replicate group" not in self.sdrf_comment_values:
@@ -86,7 +87,6 @@ class AtlasMAGETABChecker:
                 self.errors.add("GEN-E05")
 
         # FASTQ_URIs must be valid
-
         if not self.skip_file_checks:
             uri_index = [i for i, c in enumerate(self.sdrf_header)
                          if re.search("fastq_uri", c, flags=re.IGNORECASE)]

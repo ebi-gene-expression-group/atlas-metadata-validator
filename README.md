@@ -20,7 +20,7 @@ A MAGE-TAB pre-validation module for running checks that guarantee the experimen
 
 The checks can be invoked using the atlas_validation script with an IDF file path as input:
 ```
-python atlas_validation.py path/to/test.idf.txt 
+atlas_validation.py path/to/test.idf.txt 
 ```
 
 ### Options
