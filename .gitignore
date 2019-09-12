@@ -1,1 +1,5 @@
 .idea
+atlas_metadata_validator.egg-info/*
+build/*
+dist/*
+

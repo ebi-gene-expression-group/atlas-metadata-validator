@@ -12,7 +12,6 @@ from utils.file import create_logger, file_exists
 from utils.parser import get_sdrf_path, guess_submission_type_from_sdrf, guess_submission_type_from_idf, \
     read_sdrf_file, simple_idf_parser
 
-
 from checks.atlas_checker import AtlasMAGETABChecker
 
 
@@ -79,7 +78,7 @@ def main():
         logger.info("Validation finished with the following error codes: {}".format(", ".join(error_codes)))
         sys.exit(1)
     else:
-        logger.info("Validation was successful!")
+        logger.info("Validation was successful! 🍰")
 
 
 if __name__ == '__main__':
