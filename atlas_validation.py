@@ -43,6 +43,9 @@ def main():
     args = parse_args()
     idf_file, data_dir, logging_level = args.idf, args.data_dir, args.verbose
     submission_type = args.submission_type
+    
+    # Print input file name for clarity when doing multiple validations
+    logger.info("Validating {} and associated SDRF file".format(idf_file))
 
     # Exit if IDF file doesn't exist
     file_exists(idf_file)
