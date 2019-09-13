@@ -44,15 +44,15 @@ def main():
     idf_file, data_dir, logging_level = args.idf, args.data_dir, args.verbose
     submission_type = args.submission_type
     
-    # Print input file name for clarity when doing multiple validations
-    logger.info("Validating {} and associated SDRF file".format(idf_file))
-
     # Exit if IDF file doesn't exist
     file_exists(idf_file)
 
     # Create logger
     current_dir, idf_file_name = os.path.split(idf_file)
     logger = create_logger(current_dir, process_name, idf_file_name, logger_name="ATLAS", log_level=logging_level)
+
+    # Print input file name for clarity when doing multiple validations
+    logger.info("Validating {} and associated SDRF file".format(idf_file))
 
     # Get path to SDRF file
     sdrf_file_path = get_sdrf_path(idf_file, logger, data_dir)
