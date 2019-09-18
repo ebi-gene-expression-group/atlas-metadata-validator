@@ -31,7 +31,7 @@ def parse_args():
     group.add_argument('-ma', '--microarray', action='store_const', const="microarray", dest='submission_type',
                        help="Force submission type to be 'microarray'")
     parser.add_argument('-x', '--skip-file-checks', action='store_true',
-                        help="Skip file and URI atlas_metadata_validator")
+                        help="Skip file and URI checks")
     args = parser.parse_args()
 
     return args
