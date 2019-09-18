@@ -8,11 +8,11 @@ import argparse
 import os
 import sys
 
-from utils.file import create_logger, file_exists
-from utils.parser import get_sdrf_path, guess_submission_type_from_sdrf, guess_submission_type_from_idf, \
+from atlas_metadata_validator.file import create_logger, file_exists
+from atlas_metadata_validator.parser import get_sdrf_path, guess_submission_type_from_sdrf, guess_submission_type_from_idf, \
     read_sdrf_file, simple_idf_parser
 
-from checks.atlas_checker import AtlasMAGETABChecker
+from atlas_metadata_validator.atlas_checker import AtlasMAGETABChecker
 
 
 def parse_args():
@@ -31,7 +31,7 @@ def parse_args():
     group.add_argument('-ma', '--microarray', action='store_const', const="microarray", dest='submission_type',
                        help="Force submission type to be 'microarray'")
     parser.add_argument('-x', '--skip-file-checks', action='store_true',
-                        help="Skip file and URI checks")
+                        help="Skip file and URI atlas_metadata_validator")
     args = parser.parse_args()
 
     return args
@@ -67,8 +67,7 @@ def main():
     else:
         logger.info("Setting submission type to \"{}\"".format(submission_type))
 
-    atlas_checker = AtlasMAGETABChecker(idf_file, sdrf_file_path, submission_type,
-                                        skip_file_checks=args.skip_file_checks)
+    atlas_checker = AtlasMAGETABChecker(idf_file, sdrf_file_path, submission_type, skip_file_checks=args.skip_file_checks)
     atlas_checker.check_all(logger)
 
     # Collect error codes

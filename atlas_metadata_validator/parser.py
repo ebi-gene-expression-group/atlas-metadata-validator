@@ -4,8 +4,8 @@ import os
 import re
 from collections import OrderedDict, defaultdict
 
-from utils.fetch import get_controlled_vocabulary
-from utils.file import file_exists
+from atlas_metadata_validator.fetch import get_controlled_vocabulary
+from atlas_metadata_validator.file import file_exists
 
 SDRF_FILE_NAME_REGEX = r"^\s*SDRF\s*File"
 DEFAULT_DATA_DIRECTORY = "unpacked"

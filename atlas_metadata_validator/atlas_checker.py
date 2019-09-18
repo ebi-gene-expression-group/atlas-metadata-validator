@@ -1,11 +1,11 @@
-"""Module with validation checks to test for eligibility for Expression Atlas and Single Cell Expression Atlas"""
+"""Module with validation atlas_metadata_validator to test for eligibility for Expression Atlas and Single Cell Expression Atlas"""
 
 import logging
 import re
 from collections import defaultdict
 
-from utils.parser import simple_idf_parser, get_name, get_value, read_sdrf_file
-from utils.fetch import get_taxon, is_valid_url, get_controlled_vocabulary
+from atlas_metadata_validator.parser import simple_idf_parser, get_name, get_value, read_sdrf_file
+from atlas_metadata_validator.fetch import get_taxon, is_valid_url, get_controlled_vocabulary
 
 
 class AtlasMAGETABChecker:
@@ -64,7 +64,7 @@ class AtlasMAGETABChecker:
             logger.error("Column name \"{}\" appears as Comment and Characteristics/Factor Value.".format(c))
             self.errors.add("GEN-E02")
 
-        # Species checks
+        # Species atlas_metadata_validator
         for i, field in enumerate(self.sdrf_header):
             if re.search("organism", get_value(field), re.IGNORECASE):
                 organisms = {row[i] for row in self.sdrf}
@@ -103,14 +103,14 @@ class AtlasMAGETABChecker:
     def run_singlecell_checks(self, logger):
         """Check requirements for loading an experiment into Single Cell Expression Atlas"""
 
-        # Single cell IDF checks
+        # Single cell IDF atlas_metadata_validator
         required_comments = get_controlled_vocabulary("required_singlecell_idf_comments", "atlas")
         for comment in required_comments:
             if comment.lower() not in self.idf_values:
                 logger.error("Comment \"{}\" not found in IDF. Required for Single Cell Atlas.".format(comment))
                 self.errors.add("SC-E01")
 
-        # Atlas IDF comment value checks
+        # Atlas IDF comment value atlas_metadata_validator
         for k, attribs in self.idf.items():
             if re.search("EAAdditionalAttributes", k, flags=re.IGNORECASE):
                 for attrib in attribs:
@@ -156,7 +156,7 @@ class AtlasMAGETABChecker:
                 if len(well_quality_values) == 1 and "not OK" in well_quality_values:
                     logger.error("Single cell quality values are all \"not OK\".")
                     self.errors.add("SC-E07")
-            # Technical replicate group checks
+            # Technical replicate group atlas_metadata_validator
             elif re.search(r"technical replicate group", self.normalise_header(c), flags=re.IGNORECASE):
                 tech_rep_values = {row[i] for row in self.sdrf}
                 wrong_values = {v for v in tech_rep_values if not re.match(r"^[A-Za-z0-9]+$", v)}
@@ -182,7 +182,7 @@ class AtlasMAGETABChecker:
                 break
 
     def check_all(self, logger=logging.getLogger()):
-        """Trigger all applicable checks"""
+        """Trigger all applicable atlas_metadata_validator"""
 
         self.run_general_checks(logger)
         if self.submission_type == "singlecell":

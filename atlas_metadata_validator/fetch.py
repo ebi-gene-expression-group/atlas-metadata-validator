@@ -56,7 +56,7 @@ def is_valid_url(url, logger=None):
 def get_controlled_vocabulary(category, resource="translations"):
     """Read the json with controlled vocab and return the dict for the given category.
     The resource parameter specifies which file to read."""
-    resource_package = 'config'
+    resource_package = "atlas_metadata_validator"
 
     if resource == "ontology":
         resource_path = "ontology_terms.json"
