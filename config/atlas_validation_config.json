@@ -28,10 +28,12 @@
   ],
   "required_singlecell_idf_comments": [
     "EACurator",
-    "EAAdditionalAttributes",
-    "EAExpectedClusters",
     "EAExperimentType",
     "AEExperimentType"
+  ],
+  "optional_singlecell_idf_comments": [
+    "EAAdditionalAttributes",
+    "EAExpectedClusters"
   ],
   "required_singlecell_sdrf_fields": [
     "material type",
