@@ -109,6 +109,9 @@ class AtlasMAGETABChecker:
             if comment.lower() not in self.idf_values:
                 logger.error("Comment \"{}\" not found in IDF. Required for Single Cell Atlas.".format(comment))
                 self.errors.add("SC-E01")
+        if self.idf.get("duplicates"):
+            logger.error("Detected duplicated IDF field \"{}\".".format(self.idf.get("duplicates")))
+            self.errors.add("SC-E11")
 
         # Atlas IDF comment value checks
         for k, attribs in self.idf.items():
