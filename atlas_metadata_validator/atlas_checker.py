@@ -4,8 +4,8 @@ import logging
 import re
 from collections import defaultdict
 
-from utils.parser import simple_idf_parser, get_name, get_value, read_sdrf_file
-from utils.fetch import get_taxon, is_valid_url, get_controlled_vocabulary
+from atlas_metadata_validator.parser import simple_idf_parser, get_name, get_value, read_sdrf_file
+from atlas_metadata_validator.fetch import get_taxon, is_valid_url, get_controlled_vocabulary
 
 
 class AtlasMAGETABChecker:
