@@ -4,8 +4,8 @@ import logging
 import re
 from collections import defaultdict
 
-from utils.parser import simple_idf_parser, get_name, get_value, read_sdrf_file
-from utils.fetch import get_taxon, is_valid_url, get_controlled_vocabulary
+from atlas_metadata_validator.parser import simple_idf_parser, get_name, get_value, read_sdrf_file
+from atlas_metadata_validator.fetch import get_taxon, is_valid_url, get_controlled_vocabulary
 
 
 class AtlasMAGETABChecker:
@@ -109,6 +109,13 @@ class AtlasMAGETABChecker:
             if comment.lower() not in self.idf_values:
                 logger.error("Comment \"{}\" not found in IDF. Required for Single Cell Atlas.".format(comment))
                 self.errors.add("SC-E01")
+        optional_comments = get_controlled_vocabulary("optional_singlecell_idf_comments", "atlas")
+        for comment in optional_comments:
+            if comment.lower() not in self.idf_values:
+                logger.warn("Comment \"{}\" not found in IDF. This is optional.".format(comment))
+        if self.idf.get("duplicates"):
+            logger.error("Detected duplicated IDF field \"{}\".".format(self.idf.get("duplicates")))
+            self.errors.add("SC-E11")
 
         # Atlas IDF comment value checks
         for k, attribs in self.idf.items():

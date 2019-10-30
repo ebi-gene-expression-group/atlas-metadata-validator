@@ -8,11 +8,11 @@ import argparse
 import os
 import sys
 
-from utils.file import create_logger, file_exists
-from utils.parser import get_sdrf_path, guess_submission_type_from_sdrf, guess_submission_type_from_idf, \
+from atlas_metadata_validator.file import create_logger, file_exists
+from atlas_metadata_validator.parser import get_sdrf_path, guess_submission_type_from_sdrf, guess_submission_type_from_idf, \
     read_sdrf_file, simple_idf_parser
 
-from checks.atlas_checker import AtlasMAGETABChecker
+from atlas_metadata_validator.atlas_checker import AtlasMAGETABChecker
 
 
 def parse_args():
@@ -43,13 +43,16 @@ def main():
     args = parse_args()
     idf_file, data_dir, logging_level = args.idf, args.data_dir, args.verbose
     submission_type = args.submission_type
-
+    
     # Exit if IDF file doesn't exist
     file_exists(idf_file)
 
     # Create logger
     current_dir, idf_file_name = os.path.split(idf_file)
     logger = create_logger(current_dir, process_name, idf_file_name, logger_name="ATLAS", log_level=logging_level)
+
+    # Print input file name for clarity when doing multiple validations
+    logger.info("Validating {} and associated SDRF file".format(idf_file))
 
     # Get path to SDRF file
     sdrf_file_path = get_sdrf_path(idf_file, logger, data_dir)
@@ -67,8 +70,7 @@ def main():
     else:
         logger.info("Setting submission type to \"{}\"".format(submission_type))
 
-    atlas_checker = AtlasMAGETABChecker(idf_file, sdrf_file_path, submission_type,
-                                        skip_file_checks=args.skip_file_checks)
+    atlas_checker = AtlasMAGETABChecker(idf_file, sdrf_file_path, submission_type, skip_file_checks=args.skip_file_checks)
     atlas_checker.check_all(logger)
 
     # Collect error codes

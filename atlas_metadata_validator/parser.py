@@ -4,8 +4,8 @@ import os
 import re
 from collections import OrderedDict, defaultdict
 
-from utils.fetch import get_controlled_vocabulary
-from utils.file import file_exists
+from atlas_metadata_validator.fetch import get_controlled_vocabulary
+from atlas_metadata_validator.file import file_exists
 
 SDRF_FILE_NAME_REGEX = r"^\s*SDRF\s*File"
 DEFAULT_DATA_DIRECTORY = "unpacked"
@@ -25,6 +25,8 @@ def simple_idf_parser(idf_file):
                 row_label = idf_row.pop(0)
                 if row_label in idf_dict:
                     idf_dict[row_label].extend(idf_row)
+                    # The single cell pipeline does not handle duplicated IDF fields, need to collect here
+                    idf_dict["duplicates"] = row_label
                 else:
                     idf_dict[row_label] = idf_row
     return idf_dict
