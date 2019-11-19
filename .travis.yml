@@ -2,6 +2,12 @@ language: python
 python:
   - '3.6'
 
+install:
+  - pip install -U setuptools>=40.1
+  - pip install .
+
+script: atlas_validation.py --help
+
 deploy:
   provider: pypi
   user: "__token__"
