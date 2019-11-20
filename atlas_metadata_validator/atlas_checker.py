@@ -3,6 +3,8 @@
 import logging
 import re
 from collections import defaultdict
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor as PoolExecutor
 
 from atlas_metadata_validator.parser import simple_idf_parser, get_name, get_value, read_sdrf_file
 from atlas_metadata_validator.fetch import get_taxon, is_valid_url, get_controlled_vocabulary
@@ -88,17 +90,19 @@ class AtlasMAGETABChecker:
 
         # FASTQ_URIs must be valid
         if not self.skip_file_checks:
+            logger.info("Checking FASTQ URIs. This may take a while... (Skip this check with -x option)")
             uri_index = [i for i, c in enumerate(self.sdrf_header)
                          if re.search("fastq_uri", c, flags=re.IGNORECASE)]
-            logger.info("Checking FASTQ URIs. This may take a while... (Skip this check with -x option)")
-            for row in self.sdrf:
-                for i in uri_index:
-                    url = row[i]
-                    # only run the check on internet URLs, for internal files we use just the filename
-                    if re.match(re.compile("^ftp|^http", re.IGNORECASE), str(url)):
-                        if not is_valid_url(url, logger):
-                            logger.error("FASTQ_URI {} is not valid.".format(url))
-                            self.errors.add("GEN-E06")
+            uris = [row[i] for row in self.sdrf for i in uri_index
+                    if re.match(re.compile("^ftp|^http", re.IGNORECASE), str(row[i]))]
+            # Using multi-threading to speed this up
+            with PoolExecutor(max_workers=30) as executor:
+                executor.submit(is_valid_url, uris, logger)
+                future_to_url = {executor.submit(is_valid_url, uri, logger): uri for uri in uris}
+                for future in concurrent.futures.as_completed(future_to_url):
+                    if not future.result() is True:
+                        logger.error("FASTQ_URI {} is not valid.".format(future_to_url[future]))
+                        self.errors.add("GEN-E06")
 
     def run_singlecell_checks(self, logger):
         """Check requirements for loading an experiment into Single Cell Expression Atlas"""
