@@ -38,7 +38,7 @@ def get_taxon(organism, logger=logging.getLogger()):
         return organism_lookup.get(organism)
 
 
-def is_valid_url(url, logger=None, retry=5):
+def is_valid_url(url, logger=None, retry=10):
     """Check if a given URL exists without downloading the page/file
 
     For HTTP and HTTPS URLs, urllib.requests returns a http.client.HTTPResponse object,
@@ -57,7 +57,7 @@ def is_valid_url(url, logger=None, retry=5):
     except urllib.error.URLError:
         if retry > 0:
             logger.debug("URI check failed for {}. Retrying {} more time(s).".format(url, str(retry)))
-            time.sleep(3)
+            time.sleep(30/retry)
             return is_valid_url(url, logger, retry-1)
         return False
 
