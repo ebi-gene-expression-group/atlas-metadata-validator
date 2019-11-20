@@ -6,6 +6,7 @@ import re
 import requests
 import time
 import urllib
+import socket
 
 
 # To store organisms that we have already looked-up in the taxonomy (this is slow...)
@@ -37,22 +38,26 @@ def get_taxon(organism, logger=logging.getLogger()):
         return organism_lookup.get(organism)
 
 
-def is_valid_url(url, logger=None, retry=3):
+def is_valid_url(url, logger=None, retry=5):
     """Check if a given URL exists without downloading the page/file
 
     For HTTP and HTTPS URLs, urllib.requests returns a http.client.HTTPResponse object,
     for FTP URLs it returns a urllib.response.addinfourl object
     """
+
+    # The global timeout for waiting for the response from the server before giving up
+    timeout = 1
+    socket.setdefaulttimeout(timeout)
+
     try:
         r = urllib.request.urlopen(url)
         logger.debug("Checking {}... Done.".format(url))
         if r:
             return True
-
     except urllib.error.URLError:
-        logger.debug("URI check failed for {}. Retrying {} more times.".format(url, str(retry)))
         if retry > 0:
-            time.sleep(5)
+            logger.debug("URI check failed for {}. Retrying {} more time(s).".format(url, str(retry)))
+            time.sleep(3)
             return is_valid_url(url, logger, retry-1)
         return False
 
