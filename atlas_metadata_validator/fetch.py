@@ -46,7 +46,7 @@ def is_valid_url(url, logger=None, retry=10):
     """
 
     # The global timeout for waiting for the response from the server before giving up
-    timeout = 1
+    timeout = 2
     socket.setdefaulttimeout(timeout)
 
     try:
@@ -57,7 +57,7 @@ def is_valid_url(url, logger=None, retry=10):
     except urllib.error.URLError:
         if retry > 0:
             logger.debug("URI check failed for {}. Retrying {} more time(s).".format(url, str(retry)))
-            time.sleep(30/retry)
+            time.sleep(60/retry)
             return is_valid_url(url, logger, retry-1)
         return False
 

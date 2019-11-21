@@ -100,7 +100,7 @@ class AtlasMAGETABChecker:
                 executor.submit(is_valid_url, uris, logger)
                 future_to_url = {executor.submit(is_valid_url, uri, logger): uri for uri in uris}
                 for future in concurrent.futures.as_completed(future_to_url):
-                    if not future.result() is True:
+                    if future.result() is False:
                         logger.error("FASTQ_URI {} is not valid.".format(future_to_url[future]))
                         self.errors.add("GEN-E06")
 
