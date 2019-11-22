@@ -4,7 +4,6 @@ import os
 import re
 
 from collections import OrderedDict, defaultdict
-from sys import exit
 
 from atlas_metadata_validator.fetch import get_controlled_vocabulary
 from atlas_metadata_validator.file import file_exists, is_utf8

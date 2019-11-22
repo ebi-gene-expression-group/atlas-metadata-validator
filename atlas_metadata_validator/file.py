@@ -47,7 +47,6 @@ def is_utf8(input_file, logger=None):
     try:
         with codecs.open(input_file,  encoding='utf-8') as f:
             f.read()
-
     except UnicodeDecodeError:
         log_message = "Input file {} is not in UTF-8 encoding.".format(input_file)
         if logger:
