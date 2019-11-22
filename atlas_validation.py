@@ -23,6 +23,8 @@ def parse_args():
                         help="Path to the directory with SDRF and data files")
     parser.add_argument('-v', '--verbose', action='store_const', const=10, default=20,
                         help="Option to output detailed logging (debug level).")
+    parser.add_argument('-hca', action='store_true', default=False,
+                        help="Mark experiment as HCA import")
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('-sc', '--singlecell', action='store_const', const="singlecell", dest='submission_type',
                        help="Force submission type to be 'singlecell'")
@@ -70,7 +72,9 @@ def main():
     else:
         logger.info("Setting submission type to \"{}\"".format(submission_type))
 
-    atlas_checker = AtlasMAGETABChecker(idf_file, sdrf_file_path, submission_type, skip_file_checks=args.skip_file_checks)
+    atlas_checker = AtlasMAGETABChecker(idf_file, sdrf_file_path, submission_type,
+                                        skip_file_checks=args.skip_file_checks,
+                                        is_hca=args.hca)
     atlas_checker.check_all(logger)
 
     # Collect error codes

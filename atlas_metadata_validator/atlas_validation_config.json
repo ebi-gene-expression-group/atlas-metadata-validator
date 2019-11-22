@@ -33,7 +33,12 @@
   ],
   "optional_singlecell_idf_comments": [
     "EAAdditionalAttributes",
-    "EAExpectedClusters"
+    "EAExpectedClusters",
+    "HCALastUpdateDate"
+  ],
+    "required_idf_fields": [
+    "Experimental Factor Name",
+    "Protocol Name"
   ],
   "required_singlecell_sdrf_fields": [
     "material type",
@@ -45,16 +50,23 @@
     "library construction",
     "single cell isolation"
   ],
-  "required_droplet_sdrf_fields": [
+  "required_hca_sdrf_fields": [
+    "material type",
+    "library_layout",
+    "library_selection",
+    "library_source",
+    "library_strand",
+    "library construction",
+    "single cell isolation",
+    "HCA bundle UUID",
+    "HCA bundle version"
+  ],
+    "required_droplet_sdrf_fields": [
     "read1 file",
     "read2 file",
     "cdna read",
     "cell barcode read",
     "umi barcode read"
-  ],
-  "required_idf_fields": [
-    "Experimental Factor Name",
-    "Protocol Name"
   ],
   "ae_experiment_types": {
     "microarray": [
