@@ -16,28 +16,22 @@ DEFAULT_DATA_DIRECTORY = "unpacked"
 def simple_idf_parser(idf_file):
     """Return an OrderedDict with IDF headers as keys and list of all values per key"""
 
-    try:
-        with codecs.open(idf_file, encoding='utf-8') as fi:
-            idf_raw = fi.readlines()
-
-            idf_dict = OrderedDict()
-            for row in idf_raw:
-                idf_row = row.rstrip('\n').split('\t')
-                # Skip empty lines and comments
-                characters = ''.join(idf_row).strip()
-                if not (len(characters) == 0 or characters.startswith('#')):
-                    row_label = idf_row.pop(0)
-                    if row_label in idf_dict:
-                        idf_dict[row_label].extend(idf_row)
-                        # The single cell pipeline does not handle duplicated IDF fields, need to collect here
-                        idf_dict["duplicates"] = row_label
-                    else:
-                        idf_dict[row_label] = idf_row
-        return idf_dict
-
-    except UnicodeDecodeError:
-        print("IDF is not in UTF-8 encoding.")
-        exit(1)
+    with codecs.open(idf_file, encoding='utf-8') as fi:
+        idf_raw = fi.readlines()
+        idf_dict = OrderedDict()
+        for row in idf_raw:
+            idf_row = row.rstrip('\n').split('\t')
+            # Skip empty lines and comments
+            characters = ''.join(idf_row).strip()
+            if not (len(characters) == 0 or characters.startswith('#')):
+                row_label = idf_row.pop(0)
+                if row_label in idf_dict:
+                    idf_dict[row_label].extend(idf_row)
+                    # The single cell pipeline does not handle duplicated IDF fields, need to collect here
+                    idf_dict["duplicates"] = row_label
+                else:
+                    idf_dict[row_label] = idf_row
+    return idf_dict
 
 
 def read_sdrf_file(sdrf_file):
