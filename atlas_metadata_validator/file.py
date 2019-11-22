@@ -1,4 +1,4 @@
-
+import codecs
 import logging
 import os.path
 import sys
@@ -39,4 +39,19 @@ def file_exists(input_file, logger=None):
             logger.error(log_message)
         else:
             print(log_message)
-        sys.exit()
+        sys.exit(1)
+
+
+def is_utf8(input_file, logger=None):
+    """Check if the input file can be decoded using UTF-8 encoding and abort the program if not."""
+    try:
+        with codecs.open(input_file,  encoding='utf-8') as f:
+            f.read()
+
+    except UnicodeDecodeError:
+        log_message = "Input file {} is not in UTF-8 encoding.".format(input_file)
+        if logger:
+            logger.error(log_message)
+        else:
+            print("ERROR: " + log_message)
+        sys.exit(1)
