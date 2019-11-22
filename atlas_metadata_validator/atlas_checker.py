@@ -11,11 +11,12 @@ from atlas_metadata_validator.fetch import get_taxon, is_valid_url, get_controll
 
 
 class AtlasMAGETABChecker:
-    def __init__(self, idf_file, sdrf_file, submission_type, skip_file_checks=False):
+    def __init__(self, idf_file, sdrf_file, submission_type, skip_file_checks=False, is_hca=False):
         self.idf_file = idf_file
         self.sdrf_file = sdrf_file
         self.submission_type = submission_type
         self.skip_file_checks = skip_file_checks
+        self.is_hca = is_hca
         self.errors = set()
 
         # Read in IDF/SDRF files
@@ -138,9 +139,18 @@ class AtlasMAGETABChecker:
                     if attrib and attrib.strip() not in get_controlled_vocabulary("singlecell_experiment_type", "atlas"):
                         logger.error("Unknown EAExperimentType: \"{}\"".format(attrib))
                         self.errors.add("SC-E04")
+            # Guess based on accession if it is an HCA experiment
+            elif re.search("ExpressionAtlasAccession", k, flags=re.IGNORECASE):
+                for attrib in attribs:
+                    if re.match(r"E-HCAD-\d+", attrib):
+                        self.is_hca = True
 
         # Required SDRF fields
         required_sdrf_names = get_controlled_vocabulary("required_singlecell_sdrf_fields", "atlas")
+        # Slightly different SDRF comments required for HCA experiments
+        if self.is_hca:
+            logger.debug("Found HCA imported experiment, checking presence of special fields.")
+            required_sdrf_names = get_controlled_vocabulary("required_hca_sdrf_fields", "atlas")
         for field in required_sdrf_names:
             if not (field.lower() in self.sdrf_values or get_name(field) in self.header_dict):
                 logger.error("Required SDRF field \"{}\" not found.".format(field))
