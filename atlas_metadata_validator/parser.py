@@ -2,10 +2,11 @@
 import codecs
 import os
 import re
+
 from collections import OrderedDict, defaultdict
 
 from atlas_metadata_validator.fetch import get_controlled_vocabulary
-from atlas_metadata_validator.file import file_exists
+from atlas_metadata_validator.file import file_exists, is_utf8
 
 SDRF_FILE_NAME_REGEX = r"^\s*SDRF\s*File"
 DEFAULT_DATA_DIRECTORY = "unpacked"
@@ -91,8 +92,9 @@ def get_sdrf_path(idf_file_path, logger, data_dir=None):
                 else:
                     sdrf_file_path = os.path.join(current_dir, sdrf_file_name)
     logger.debug("Generated SDRF file path: {}".format(sdrf_file_path))
-    # Check if file exists and exit if not
+    # Check if file exists and is in UTF-8 encoding and exit if not
     file_exists(sdrf_file_path)
+    is_utf8(sdrf_file_path)
 
     return sdrf_file_path
 

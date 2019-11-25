@@ -8,7 +8,7 @@ import argparse
 import os
 import sys
 
-from atlas_metadata_validator.file import create_logger, file_exists
+from atlas_metadata_validator.file import create_logger, file_exists, is_utf8
 from atlas_metadata_validator.parser import get_sdrf_path, guess_submission_type_from_sdrf, guess_submission_type_from_idf, \
     read_sdrf_file, simple_idf_parser
 
@@ -46,8 +46,9 @@ def main():
     idf_file, data_dir, logging_level = args.idf, args.data_dir, args.verbose
     submission_type = args.submission_type
     
-    # Exit if IDF file doesn't exist
+    # Exit if IDF file doesn't exist or isn't in UTF-8 encoding
     file_exists(idf_file)
+    is_utf8(idf_file)
 
     # Create logger
     current_dir, idf_file_name = os.path.split(idf_file)
