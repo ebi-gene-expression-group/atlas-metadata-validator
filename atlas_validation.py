@@ -8,7 +8,7 @@ import argparse
 import os
 import sys
 
-from atlas_metadata_validator.file import create_logger, file_exists
+from atlas_metadata_validator.file import create_logger, file_exists, is_utf8
 from atlas_metadata_validator.parser import get_sdrf_path, guess_submission_type_from_sdrf, guess_submission_type_from_idf, \
     read_sdrf_file, simple_idf_parser
 
@@ -23,6 +23,8 @@ def parse_args():
                         help="Path to the directory with SDRF and data files")
     parser.add_argument('-v', '--verbose', action='store_const', const=10, default=20,
                         help="Option to output detailed logging (debug level).")
+    parser.add_argument('-hca', action='store_true', default=False,
+                        help="Mark experiment as HCA import")
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('-sc', '--singlecell', action='store_const', const="singlecell", dest='submission_type',
                        help="Force submission type to be 'singlecell'")
@@ -44,8 +46,9 @@ def main():
     idf_file, data_dir, logging_level = args.idf, args.data_dir, args.verbose
     submission_type = args.submission_type
     
-    # Exit if IDF file doesn't exist
+    # Exit if IDF file doesn't exist or isn't in UTF-8 encoding
     file_exists(idf_file)
+    is_utf8(idf_file)
 
     # Create logger
     current_dir, idf_file_name = os.path.split(idf_file)
@@ -70,7 +73,9 @@ def main():
     else:
         logger.info("Setting submission type to \"{}\"".format(submission_type))
 
-    atlas_checker = AtlasMAGETABChecker(idf_file, sdrf_file_path, submission_type, skip_file_checks=args.skip_file_checks)
+    atlas_checker = AtlasMAGETABChecker(idf_file, sdrf_file_path, submission_type,
+                                        skip_file_checks=args.skip_file_checks,
+                                        is_hca=args.hca)
     atlas_checker.check_all(logger)
 
     # Collect error codes

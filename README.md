@@ -28,3 +28,4 @@ atlas_validation.py path/to/test.idf.txt
 - The script guesses the experiment type (sequencing, microarray or single-cell) from the MAGE-TAB. If this was unsuccessful the experiment type can be set by specifying the respective argument `-seq`, `-ma` or `-sc`. 
 - The data file and URI checks may take long time. Hence there is an option to skip these checks with `-x`.
 - Verbose logging can be activated with `-v`.
+- Special validation rules for HCA-imported experiments can be invoked with `-hca` option. The validator will otherwise guess if the experiment is an HCA import based on the HCAD accession code in the ExpressionAtlasAccession field. 
