@@ -38,7 +38,7 @@ def get_taxon(organism, logger=logging.getLogger()):
         return organism_lookup.get(organism)
 
 
-def is_valid_url(url, logger=None, retry=10):
+def is_valid_url(url, logger=None, retry=5):
     """Check if a given URL exists without downloading the page/file
 
     For HTTP and HTTPS URLs, urllib.requests returns a http.client.HTTPResponse object,

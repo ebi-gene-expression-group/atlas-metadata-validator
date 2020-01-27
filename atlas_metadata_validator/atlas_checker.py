@@ -97,13 +97,10 @@ class AtlasMAGETABChecker:
             uris = [row[i] for row in self.sdrf for i in uri_index
                     if re.match(re.compile("^ftp|^http", re.IGNORECASE), str(row[i]))]
             # Using multi-threading to speed this up
-            with PoolExecutor(max_workers=30) as executor:
-                executor.submit(is_valid_url, uris, logger)
-                future_to_url = {executor.submit(is_valid_url, uri, logger): uri for uri in uris}
-                for future in concurrent.futures.as_completed(future_to_url):
-                    if future.result() is False:
-                        logger.error("FASTQ_URI {} is not valid.".format(future_to_url[future]))
-                        self.errors.add("GEN-E06")
+            failed_uris = self.check_multiple_uris(uris, 5, logger)
+            for fu in failed_uris:
+                logger.error("FASTQ_URI {} is not valid.".format(fu))
+                self.errors.add("GEN-E06")
 
     def run_singlecell_checks(self, logger):
         """Check requirements for loading an experiment into Single Cell Expression Atlas"""
@@ -240,3 +237,19 @@ class AtlasMAGETABChecker:
                     sample2datafile[row[sample_index]].append(row[data_index])
 
         return sample2datafile
+
+    def check_multiple_uris(self, uri_list, retries, logger):
+
+        failed_uris = set()
+        with PoolExecutor(max_workers=30) as executor:
+            executor.submit(is_valid_url, uri_list, logger)
+            future_to_url = {executor.submit(is_valid_url, uri, logger): uri for uri in uri_list}
+            for future in concurrent.futures.as_completed(future_to_url):
+                if future.result() is False:
+                    failed_uris.add(future_to_url[future])
+
+        if failed_uris and retries > 0:
+            logger.debug("{} URIs failed validation. Trying {} more time(s)".format(len(failed_uris), retries))
+            return self.check_multiple_uris(failed_uris, retries-1, logger)
+
+        return failed_uris
