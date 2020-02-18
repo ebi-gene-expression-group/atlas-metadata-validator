@@ -1,10 +1,12 @@
 {
   "singlecell_library_construction": {
     "droplet": [
+      "10xv3",
       "10xv2",
       "drop-seq"
     ],
     "all": [
+      "10xv3",
       "10xv2",
       "drop-seq",
       "smart-seq2",

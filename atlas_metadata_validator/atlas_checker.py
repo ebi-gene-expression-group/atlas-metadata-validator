@@ -45,7 +45,7 @@ class AtlasMAGETABChecker:
         if "technical replicate group" not in self.sdrf_comment_values:
             for s in self.sample2datafile:
                 if s.endswith("PAIRED") and len(self.sample2datafile[s]) > 2:
-                    logger.warn("Experiment is likely to contain technical replicates"
+                    logger.warn("Experiment is likely to contain technical replicates. "
                                 "Please add \"Comment[technical replicate group]\".")
                     break
                 elif not s.endswith("PAIRED") and len(self.sample2datafile[s]) > 1:
