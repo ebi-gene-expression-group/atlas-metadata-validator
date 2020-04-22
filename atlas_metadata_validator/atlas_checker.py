@@ -139,11 +139,6 @@ class AtlasMAGETABChecker:
                     if attrib and attrib.strip() not in get_controlled_vocabulary("singlecell_experiment_type", "atlas"):
                         logger.error("Unknown EAExperimentType: \"{}\"".format(attrib))
                         self.errors.add("SC-E04")
-            # Guess based on accession if it is an HCA experiment
-            elif re.search("ExpressionAtlasAccession", k, flags=re.IGNORECASE):
-                for attrib in attribs:
-                    if re.match(r"E-HCAD-\d+", attrib):
-                        self.is_hca = True
 
         # Required SDRF fields
         required_sdrf_names = get_controlled_vocabulary("required_singlecell_sdrf_fields", "atlas")
