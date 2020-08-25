@@ -12,6 +12,9 @@ import socket
 # To store organisms that we have already looked-up in the taxonomy (this is slow...)
 organism_lookup = {}
 
+# To store the Atlas validation config with controlled vocabulary terms
+atlas_config = None
+
 
 def get_taxon(organism, logger=logging.getLogger()):
     """Return the NCBI taxonomy ID for a given species name."""
@@ -62,18 +65,34 @@ def is_valid_url(url, logger=None, retry=10):
         return False
 
 
-def get_controlled_vocabulary(category, resource="translations"):
+def get_controlled_vocabulary(category, resource="atlas", logger=None):
     """Read the json with controlled vocab and return the dict for the given category.
-    The resource parameter specifies which file to read."""
-    resource_package = "atlas_metadata_validator"
+    The config is fetched from the GitHub online copy as the primary source,
+    if this isn't possible ("offline mode") the config packaged with the validator is used.
+    """
 
-    if resource == "ontology":
-        resource_path = "ontology_terms.json"
-    elif resource == "atlas":
-        resource_path = "atlas_validation_config.json"
-    else:
-        resource_path = "term_translations.json"
-    all_terms = json.loads(pkg_resources.resource_string(resource_package, resource_path))
+    # Using global variable to only parse the file the first time it is used
+    global atlas_config
 
-    return all_terms[category]
+    if resource == "atlas":
+        if not atlas_config:
+            resource_path = "atlas_validation_config.json"
+            online_path = "https://raw.githubusercontent.com/ebi-gene-expression-group/metadata-validation-config/master/atlas_validation_config.json"
+
+            try:
+                if logger:
+                    logger.debug("Getting online configuration from {}".format(online_path))
+
+                raw_repsonse = requests.get(online_path)
+                atlas_config = json.loads(raw_repsonse.text)
+
+            except Exception:
+                # Deliberately keeping this broad, any failure will lead to the back-up being used
+                if logger:
+                    logger.debug("Beware! Using local configuration file that might be out of date.")
+
+                resource_package = "atlas_metadata_validator"
+                atlas_config = json.loads(pkg_resources.resource_string(resource_package, resource_path))
+
+        return atlas_config[category]
 
