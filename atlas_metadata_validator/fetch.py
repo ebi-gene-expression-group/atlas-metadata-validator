@@ -4,9 +4,12 @@ import logging
 import pkg_resources
 import re
 import requests
+import os
 import time
 import urllib
 import socket
+import git
+
 
 
 # To store organisms that we have already looked-up in the taxonomy (this is slow...)
@@ -67,8 +70,8 @@ def is_valid_url(url, logger=None, retry=10):
 
 def get_controlled_vocabulary(category, resource="atlas", logger=None):
     """Read the json with controlled vocab and return the dict for the given category.
-    The config is fetched from the GitHub online copy as the primary source,
-    if this isn't possible ("offline mode") the config packaged with the validator is used.
+    The config is fetched from the GitHub online copy as the primary source, which is cloned
+    on the first encounter and updated upon subsequent runs of the script.
     """
 
     # Using global variable to only parse the file the first time it is used
@@ -77,22 +80,28 @@ def get_controlled_vocabulary(category, resource="atlas", logger=None):
     if resource == "atlas":
         if not atlas_config:
             resource_path = "atlas_validation_config.json"
-            online_path = "https://raw.githubusercontent.com/ebi-gene-expression-group/metadata-validation-config/master/atlas_validation_config.json"
+            config_repo_name = "metadata-validation-config"
+            online_repo_base = "https://github.com/ebi-gene-expression-group/"
+            online_repo = online_repo_base + config_repo_name
+            local_repo = os.path.join(os.getcwd(), config_repo_name)
+            local_config = os.path.join(local_repo, resource_path)
+
+            if not os.path.exists(local_repo):
+                logger.debug("No local config found, cloning from remote repo {}".format(online_repo))
+                git.Repo.clone_from(online_repo, local_repo, branch="master")
 
             try:
-                if logger:
-                    logger.debug("Getting online configuration from {}".format(online_path))
-
-                raw_repsonse = requests.get(online_path)
-                atlas_config = json.loads(raw_repsonse.text)
+                logger.debug("Trying to update local config.")
+                cloned_repo = git.Repo(local_repo)
+                origin = cloned_repo.remotes.origin
+                origin.pull()
+                logger.debug("Success.")
 
             except Exception:
-                # Deliberately keeping this broad, any failure will lead to the back-up being used
-                if logger:
-                    logger.debug("Beware! Using local configuration file that might be out of date.")
+                logger.debug("Failed to update local config.")
 
-                resource_package = "atlas_metadata_validator"
-                atlas_config = json.loads(pkg_resources.resource_string(resource_package, resource_path))
+            if os.path.exists(local_config):
+                with open(local_config) as lc:
+                    atlas_config = json.load(lc)
 
         return atlas_config[category]
-
