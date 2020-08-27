@@ -25,7 +25,8 @@ setuptools.setup(
     ],
     include_package_data=True,
     install_requires=[
-        "requests>=2.20.1"
+        "requests>=2.20.1",
+        "GitPython>=3.1.7"
     ],
     python_requires=">=3.6",
 )
