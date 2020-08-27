@@ -1,7 +1,6 @@
 
 import json
 import logging
-import pkg_resources
 import re
 import requests
 import os
@@ -9,7 +8,6 @@ import time
 import urllib
 import socket
 import git
-
 
 
 # To store organisms that we have already looked-up in the taxonomy (this is slow...)
@@ -79,23 +77,24 @@ def get_controlled_vocabulary(category, resource="atlas", logger=None):
 
     if resource == "atlas":
         if not atlas_config:
-            resource_path = "atlas_validation_config.json"
-            config_repo_name = "metadata-validation-config"
-            online_repo_base = "https://github.com/ebi-gene-expression-group/"
-            online_repo = online_repo_base + config_repo_name
+            # Retrieve config file repo location from environment or use default
+            config_repo = os.environ.get("VALIDATION_CONFIG_REPO") \
+                          or "https://github.com/ebi-gene-expression-group/metadata-validation-config"
+            config_file_name = os.environ.get("VALIDATION_CONFIG_FILE") or "atlas_validation_config.json"
+            config_repo_name = os.path.basename(config_repo)
+
             local_repo = os.path.join(os.getcwd(), config_repo_name)
-            local_config = os.path.join(local_repo, resource_path)
+            local_config = os.path.join(local_repo, config_file_name)
 
             if not os.path.exists(local_repo):
-                logger.debug("No local config found, cloning from remote repo {}".format(online_repo))
-                git.Repo.clone_from(online_repo, local_repo, branch="master")
+                logger.debug("No local config found, cloning from remote repo {}".format(config_repo))
+                git.Repo.clone_from(config_repo, local_repo, branch="master")
 
             try:
                 logger.debug("Trying to update local config.")
                 cloned_repo = git.Repo(local_repo)
                 origin = cloned_repo.remotes.origin
                 origin.pull()
-                logger.debug("Success.")
 
             except Exception:
                 logger.debug("Failed to update local config.")
