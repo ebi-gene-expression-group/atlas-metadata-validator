@@ -1,10 +1,10 @@
 # Expression Atlas metadata validator
 
-This is a python module to parse a set of MAGE-TAB files and check for compatibility with the Expression Atlas and Single Cell Expression Atlas analysis pipelines. The main validation script automatically detects the experiment type from the MAGE-TAB and runs the respective tests. Currently general checks (for bulk and single-cell experiment) as well as Single Cell Expression Atlas specific checks are supported. 
+This is a Python module to parse a set of MAGE-TAB files and check for compatibility with the Expression Atlas and Single Cell Expression Atlas analysis pipelines. The main validation script automatically detects the experiment type from the MAGE-TAB and runs the respective tests. Currently general checks (for bulk and single-cell experiment) as well as Single Cell Expression Atlas specific checks are supported. The controlled vocabulary for the checks are stored in the [metadata-validation-config](https://github.com/ebi-gene-expression-group/metadata-validation-config) repository. 
 
 ## Requirements
 
-Python 3.6 and requests (tested with version 2.20.1)
+Python 3.6, requests (tested with version 2.20.1), and GitPython (tested with version 3.1.7)
 
 
 ## Install
@@ -13,6 +13,14 @@ Install with pip:
 ```
 pip install atlas-metadata-validator
 ```
+
+Set environment variables to fetch the validation configuration for controlled vocabulary terms:
+
+```bash
+export VALIDATION_CONFIG_REPO='https://github.com/ebi-gene-expression-group/metadata-validation-config'
+export VALIDATION_CONFIG_FILE='atlas_validation_config.json'
+```
+(if not specified the above values are used as default)
 
 ## Single-cell MAGE-TAB validator
 

@@ -124,7 +124,7 @@ def guess_submission_type_from_idf(idf_dict):
     """
 
     if "AEExperimentType" in idf_dict:
-        all_types = get_controlled_vocabulary("ae_experiment_types", "atlas")
+        all_types = get_controlled_vocabulary("ae_experiment_types", "atlas", logger)
 
         for exptype in idf_dict["AEExperimentType"]:
             if exptype in all_types["sequencing"]:
