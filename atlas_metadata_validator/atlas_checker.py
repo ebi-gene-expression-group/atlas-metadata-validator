@@ -54,7 +54,7 @@ class AtlasMAGETABChecker:
                         break
 
         # Required IDF fields
-        required_idf_fields = get_controlled_vocabulary("required_idf_fields", "atlas")
+        required_idf_fields = get_controlled_vocabulary("required_idf_fields", "atlas", logger)
         for field in required_idf_fields:
             if field.lower() not in self.idf_values:
                 logger.error("No \"{}\" found in IDF.".format(field))
@@ -109,12 +109,12 @@ class AtlasMAGETABChecker:
         """Check requirements for loading an experiment into Single Cell Expression Atlas"""
 
         # Single cell IDF checks
-        required_comments = get_controlled_vocabulary("required_singlecell_idf_comments", "atlas")
+        required_comments = get_controlled_vocabulary("required_singlecell_idf_comments", "atlas", logger)
         for comment in required_comments:
             if comment.lower() not in self.idf_values:
                 logger.error("Comment \"{}\" not found in IDF. Required for Single Cell Atlas.".format(comment))
                 self.errors.add("SC-E01")
-        optional_comments = get_controlled_vocabulary("optional_singlecell_idf_comments", "atlas")
+        optional_comments = get_controlled_vocabulary("optional_singlecell_idf_comments", "atlas", logger)
         for comment in optional_comments:
             if comment.lower() not in self.idf_values:
                 logger.warn("Comment \"{}\" not found in IDF. This is optional.".format(comment))
@@ -136,23 +136,23 @@ class AtlasMAGETABChecker:
                         self.errors.add("SC-E03")
             elif re.search("EAExperimentType", k, flags=re.IGNORECASE):
                 for attrib in attribs:
-                    if attrib and attrib.strip() not in get_controlled_vocabulary("singlecell_experiment_type", "atlas"):
+                    if attrib and attrib.strip() not in get_controlled_vocabulary("singlecell_experiment_type", "atlas", logger):
                         logger.error("Unknown EAExperimentType: \"{}\"".format(attrib))
                         self.errors.add("SC-E04")
 
         # Required SDRF fields
-        required_sdrf_names = get_controlled_vocabulary("required_singlecell_sdrf_fields", "atlas")
+        required_sdrf_names = get_controlled_vocabulary("required_singlecell_sdrf_fields", "atlas", logger)
         # Slightly different SDRF comments required for HCA experiments
         if self.is_hca:
             logger.debug("Found HCA imported experiment, checking presence of special fields.")
-            required_sdrf_names = get_controlled_vocabulary("required_hca_sdrf_fields", "atlas")
+            required_sdrf_names = get_controlled_vocabulary("required_hca_sdrf_fields", "atlas", logger)
         for field in required_sdrf_names:
             if not (field.lower() in self.sdrf_values or get_name(field) in self.header_dict):
                 logger.error("Required SDRF field \"{}\" not found.".format(field))
                 self.errors.add("SC-E05")
 
         # Valid SDRF values
-        library_construction_terms = get_controlled_vocabulary("singlecell_library_construction", "atlas")
+        library_construction_terms = get_controlled_vocabulary("singlecell_library_construction", "atlas", logger)
         sc_protocol_values = {}
         for i, c in enumerate(self.sdrf_header):
             # Check for supported library construction terms
@@ -190,7 +190,7 @@ class AtlasMAGETABChecker:
         # SDRF terms required for droplet experiments
         for protocol in sc_protocol_values:
             if protocol.lower() in library_construction_terms.get("droplet"):
-                droplet_terms = get_controlled_vocabulary("required_droplet_sdrf_fields", "atlas")
+                droplet_terms = get_controlled_vocabulary("required_droplet_sdrf_fields", "atlas", logger)
                 for dt in droplet_terms:
                     if dt not in self.sdrf_values:
                         logger.error("Required SDRF droplet field \"{}\" not found.".format(dt))

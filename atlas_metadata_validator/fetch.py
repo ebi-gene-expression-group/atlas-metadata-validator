@@ -1,16 +1,20 @@
 
 import json
 import logging
-import pkg_resources
 import re
 import requests
+import os
 import time
 import urllib
 import socket
+import git
 
 
 # To store organisms that we have already looked-up in the taxonomy (this is slow...)
 organism_lookup = {}
+
+# To store the Atlas validation config with controlled vocabulary terms
+atlas_config = None
 
 
 def get_taxon(organism, logger=logging.getLogger()):
@@ -62,18 +66,41 @@ def is_valid_url(url, logger=None, retry=10):
         return False
 
 
-def get_controlled_vocabulary(category, resource="translations"):
+def get_controlled_vocabulary(category, resource="atlas", logger=None):
     """Read the json with controlled vocab and return the dict for the given category.
-    The resource parameter specifies which file to read."""
-    resource_package = "atlas_metadata_validator"
+    The config is fetched from the GitHub online copy as the primary source, which is cloned
+    on the first encounter and updated upon subsequent runs of the script.
+    """
 
-    if resource == "ontology":
-        resource_path = "ontology_terms.json"
-    elif resource == "atlas":
-        resource_path = "atlas_validation_config.json"
-    else:
-        resource_path = "term_translations.json"
-    all_terms = json.loads(pkg_resources.resource_string(resource_package, resource_path))
+    # Using global variable to only parse the file the first time it is used
+    global atlas_config
 
-    return all_terms[category]
+    if resource == "atlas":
+        if not atlas_config:
+            # Retrieve config file repo location from environment or use default
+            config_repo = os.environ.get("VALIDATION_CONFIG_REPO") \
+                          or "https://github.com/ebi-gene-expression-group/metadata-validation-config"
+            config_file_name = os.environ.get("VALIDATION_CONFIG_FILE") or "atlas_validation_config.json"
+            config_repo_name = os.path.basename(config_repo)
 
+            local_repo = os.path.join(os.getcwd(), config_repo_name)
+            local_config = os.path.join(local_repo, config_file_name)
+
+            if not os.path.exists(local_repo):
+                logger.debug("No local config found, cloning from remote repo {}".format(config_repo))
+                git.Repo.clone_from(config_repo, local_repo, branch="master")
+
+            try:
+                logger.debug("Trying to update local config.")
+                cloned_repo = git.Repo(local_repo)
+                origin = cloned_repo.remotes.origin
+                origin.pull()
+
+            except Exception:
+                logger.debug("Failed to update local config.")
+
+            if os.path.exists(local_config):
+                with open(local_config) as lc:
+                    atlas_config = json.load(lc)
+
+        return atlas_config[category]
