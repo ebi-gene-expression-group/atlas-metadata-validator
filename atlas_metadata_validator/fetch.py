@@ -83,11 +83,12 @@ def get_controlled_vocabulary(category, resource="atlas", logger=None):
             config_file_name = os.environ.get("VALIDATION_CONFIG_FILE") or "atlas_validation_config.json"
             config_repo_name = os.path.basename(config_repo)
 
-            local_repo = os.path.join(os.getcwd(), config_repo_name)
+            local_config_path = os.environ.get("VALIDATION_CONFIG_LOCAL_PATH") or os.getcwd()
+            local_repo = os.path.join(local_config_path, config_repo_name)
             local_config = os.path.join(local_repo, config_file_name)
 
             if not os.path.exists(local_repo):
-                logger.debug("No local config found, cloning from remote repo {}".format(config_repo))
+                logger.debug("No local config found, cloning from remote repo {} to {}".format(config_repo, local_repo))
                 git.Repo.clone_from(config_repo, local_repo, branch="master")
 
             try:

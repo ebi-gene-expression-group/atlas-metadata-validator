@@ -22,6 +22,12 @@ export VALIDATION_CONFIG_FILE='atlas_validation_config.json'
 ```
 (if not specified the above values are used as default)
 
+Set local path where to store the validation config files, default is working dir when calling the script
+```bash
+export VALIDATION_CONFIG_LOCAL_PATH='/path/to/your/local/copy/'
+```
+
+
 ## Single-cell MAGE-TAB validator
 
 A MAGE-TAB pre-validation module for running checks that guarantee the experiment can be processed for [Single Cell Expression Atlas](https://www.ebi.ac.uk/gxa/sc/home). The checks are mainly covering the pre-validation by https://github.com/ebi-gene-expression-group/scxa-control-workflow/blob/master/bin/sdrfToNfConf.R in order to guarantee correct processing. It reads metadata directly from the MAGE-TAB and generates a log file in the directory of the IDF file.
