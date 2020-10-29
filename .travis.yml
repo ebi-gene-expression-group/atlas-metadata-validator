@@ -1,18 +1,15 @@
 language: python
 python:
-  - '3.6'
-
+- '3.6'
 install:
-  - pip install -U setuptools>=40.1
-  - pip install .
-
+- pip install -U setuptools>=40.1
+- pip install .
 script: atlas_validation.py --help
-
 deploy:
   provider: pypi
-  user: "__token__"
+  user: __token__
   password:
-    secure: lVkEhz/xB5mLVi0BTOmrqzKgVVBFI2kTbd1FXKErQKb8sfPxyGWAU124pRD/s0FnWd0anNrAr58TDXp56vRLsVFLL7+PKS1+3uHB+aYlGoiNc2foVfEU7dfGnXTItXDvdF31WSUeqAd8LWqt7+6MJ+N5O85NcfyD562KhM7dDC2w0sFKqHe2fcxbq+gZeBc6bwVxRZ8641NWeiu2HY60HCzG5jSXSABJe/zOAjoW0Z/r41iKtIwWonr47g3OjlYUNkkisW/xkjx4Jvu8duO3679MYFtARAJSur+KvvZWMPfvMsweeEQeLztfPZ0D7Y+vE9YNtb4B0JuPk62qfk/WTJ9sHIcpAbJRM5oL7Hbd09BIVMHQtNfo5Be9lb7vDqiT85ejTMY0ynnaFKaOWCQTUcnv7HnM9liEemgyKMse+VkZpnQzfOPi5cRknImw8I9XGht1MgNfWX4gHtVpidmMGJVI8UqrhNmzdgp7Ia03QkIDIWz0wGKnk3aVgdH1fiqeu/fDt4v1ZHC13Wh+Jj60YCoxI1tyTNPhjUUiPIQvohS0Mb6LlEA1A+eUaJDhz14zCmVDIqtBaDbYTtigCxDzeSLuWnwyTHvpuuCZ28dElqE0D0pDGIzIjRdXC5l21tNLtuxTZ85UhfqJn6lnABNb02HXGy9Ac4nvuTHPz7GDXEw=
+    secure: fjvx4U+t4NDQFcM3x1dgorioC6gsamIicIQtS0F43BgLCSsRJhoqZlXzSM8hTw/EHzFT6mXB2KX3dnqdxJXSNmPDdzBHyW9CnJX6LihdV0TS22SH5GNbNvo0+16Js2RpD4eEql0PAaVe7XMZb9T9Tiw4Hte/y9h+T4kSoYgn2arFvIN2xi4SIC5tGCeKoJtoyX8Aj8LDW9CS3j2+aGsrfq7oaq4LTpPIf+2vrPipiREpjKacKnVFuH7b1pQUVkKSR0RhcDzmap/0UEfnFo5C2CQB60wFxxUCZRchWgxBCuOs7NxgrzuWmcKPQnGacVDFuPKWZ4zXRLBeszNk92XSfH9K+nHxtZ52PaWttNgoSgjlh6VTvPlOE7Hpz/xQ15VQ9fXRXC4W8gjIZmyb8YHC6/a2EhJ4JHHYcTk+ADSW8ZKQqc3pr5d9R0nXL+5PwlwBT4d0SukQUnM7mA3LsLA3NXTG4In4xkMy/nx8Rz1nLbFRzSj/Tm7xFBncyC5k3uOcRiGR9dSVDKqw1sUJodU3rY4b5+5bBeBWix6aJsVd2zpai2Ta+8zLjtRT/FCxmpfWRhm2Hw4RfctdD9rUjfnSlPjQ9hFLHZFTHdovLjlgCYSGVUUA4WKnx+z7LxYV1GG7KVgoVzxxg/QP42xMM9XSey9kkaYt1mpZEsTXKhDPONM=
   skip_cleanup: true
   on:
     tags: true
