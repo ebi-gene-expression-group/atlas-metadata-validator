@@ -92,18 +92,21 @@ class AtlasMAGETABChecker:
         # FASTQ_URIs must be valid
         if not self.skip_file_checks:
             logger.info("Checking FASTQ URIs. This may take a while... (Skip this check with -x option)")
-            uri_index = [i for i, c in enumerate(self.sdrf_header)
-                         if re.search("fastq_uri", c, flags=re.IGNORECASE)]
-            uris = [row[i] for row in self.sdrf for i in uri_index
-                    if re.match(re.compile("^ftp|^http", re.IGNORECASE), str(row[i]))]
-            # Using multi-threading to speed this up
-            with PoolExecutor(max_workers=30) as executor:
-                executor.submit(is_valid_url, uris, logger)
-                future_to_url = {executor.submit(is_valid_url, uri, logger): uri for uri in uris}
-                for future in concurrent.futures.as_completed(future_to_url):
-                    if future.result() is False:
-                        logger.error("FASTQ_URI {} is not valid.".format(future_to_url[future]))
-                        self.errors.add("GEN-E06")
+            uri_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields")
+            print(uri_fields)
+            for uri_field in uri_fields:
+                uri_index = [i for i, c in enumerate(self.sdrf_header)
+                             if re.search(uri_field, c, flags=re.IGNORECASE)]
+                uris = [row[i] for row in self.sdrf for i in uri_index
+                        if re.match(re.compile("^ftp|^http", re.IGNORECASE), str(row[i]))]
+                # Using multi-threading to speed this up
+                with PoolExecutor(max_workers=30) as executor:
+                    executor.submit(is_valid_url, uris, logger)
+                    future_to_url = {executor.submit(is_valid_url, uri, logger): uri for uri in uris}
+                    for future in concurrent.futures.as_completed(future_to_url):
+                        if future.result() is False:
+                            logger.error("{} {} is not valid.".format(uri_field.upper(), future_to_url[future]))
+                            self.errors.add("GEN-E06")
 
     def run_singlecell_checks(self, logger):
         """Check requirements for loading an experiment into Single Cell Expression Atlas"""
