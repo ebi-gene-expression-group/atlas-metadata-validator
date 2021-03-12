@@ -153,6 +153,17 @@ class AtlasMAGETABChecker:
                 logger.error("Required SDRF field \"{}\" not found.".format(field))
                 self.errors.add("SC-E05")
 
+        # Require at least one of those fields to be present
+        required_download_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields", "atlas", logger)
+        found_download_field = False
+        for field in required_download_fields:
+            if field.lower() in self.sdrf_values or get_name(field) in self.header_dict:
+                found_download_field = True
+                break
+        if not found_download_field:
+            logger.error("Required data download SDRF field \"{}\" not found.".format(" or ".join(required_download_fields)))
+            self.errors.add("SC-E12")
+
         # Valid SDRF values
         library_construction_terms = get_controlled_vocabulary("singlecell_library_construction", "atlas", logger)
         sc_protocol_values = {}
