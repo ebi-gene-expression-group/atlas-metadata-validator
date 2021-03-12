@@ -93,7 +93,6 @@ class AtlasMAGETABChecker:
         if not self.skip_file_checks:
             logger.info("Checking FASTQ URIs. This may take a while... (Skip this check with -x option)")
             uri_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields")
-            print(uri_fields)
             for uri_field in uri_fields:
                 uri_index = [i for i, c in enumerate(self.sdrf_header)
                              if re.search(uri_field, c, flags=re.IGNORECASE)]
