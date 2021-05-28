@@ -204,10 +204,32 @@ class AtlasMAGETABChecker:
         for protocol in sc_protocol_values:
             if protocol.lower() in library_construction_terms.get("droplet"):
                 droplet_terms = get_controlled_vocabulary("required_droplet_sdrf_fields", "atlas", logger)
+                allowed_read_values = get_controlled_vocabulary("allowed_read_values", "atlas", logger)
                 for dt in droplet_terms:
                     if dt not in self.sdrf_values:
                         logger.error("Required SDRF droplet field \"{}\" not found.".format(dt))
                         self.errors.add("SC-E10")
+                    else:
+                        # Check that the values match the allowed
+                        droplet_term_values = {row[i] for row in self.sdrf for i, c in enumerate(self.sdrf_header)
+                                               if self.normalise_header(dt) == self.normalise_header(c)}
+                        if dt.endswith("read"):
+                            for droplet_value in droplet_term_values:
+                                if droplet_value not in allowed_read_values:
+                                    logger.error(f"Read value \"{droplet_value}\" for \"{dt}\" is not allowed.")
+                                    self.errors.add("SC-E13")
+                droplet_numerical_terms = get_controlled_vocabulary("optional_droplet_numerical_fields", "atlas", logger)
+                print(droplet_numerical_terms)
+                for dnt in droplet_numerical_terms:
+                    # check for numerical values
+                    droplet_term_values = {row[i] for row in self.sdrf for i, c in enumerate(self.sdrf_header)
+                                           if self.normalise_header(dnt) == self.normalise_header(c)}
+                    print(droplet_term_values)
+                    for droplet_value in droplet_term_values:
+                        if not re.match(r"^\d+$", droplet_value):
+                            logger.error(f"Value \"{droplet_value}\" for \"{dnt}\" is not a numerical value.")
+                            self.errors.add("SC-E14")
+
                 break
 
     def check_all(self, logger=logging.getLogger()):
