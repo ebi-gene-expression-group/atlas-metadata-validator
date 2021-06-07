@@ -93,12 +93,24 @@ class AtlasMAGETABChecker:
         if not self.skip_file_checks:
             logger.info("Checking FASTQ URIs. This may take a while... (Skip this check with -x option)")
             uri_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields")
+            uri_pattern = re.compile(r"^(https?|ftp)://", re.IGNORECASE)  # Identify based on start of string
+            non_uri_pattern = re.compile(r"^[^/\s]+$")  # Not allowing slashes and spaces if we don't have a web address
+            uris = []
+            non_uris = []
             for uri_field in uri_fields:
                 uri_index = [i for i, c in enumerate(self.sdrf_header)
                              if re.search(uri_field, c, flags=re.IGNORECASE)]
-                uris = [row[i] for row in self.sdrf for i in uri_index
-                        if re.match(re.compile("^ftp|^http", re.IGNORECASE), str(row[i]))]
-                # Using multi-threading to speed this up
+                for row in self.sdrf:
+                    for i in uri_index:
+                        if re.match(uri_pattern, str(row[i])):
+                            uris.append(row[i])
+                        elif not re.match(non_uri_pattern, row[i]):
+                            logger.error("{} {} is not in the right format.".format(uri_field.upper(), row[i]))
+                            self.errors.add("GEN-E15")
+                        else:
+                            non_uris.append(row[i])
+
+                # Using multi-threading to speed up the validation of web URIs
                 with PoolExecutor(max_workers=30) as executor:
                     executor.submit(is_valid_url, uris, logger)
                     future_to_url = {executor.submit(is_valid_url, uri, logger): uri for uri in uris}
@@ -106,6 +118,19 @@ class AtlasMAGETABChecker:
                         if future.result() is False:
                             logger.error("{} {} is not valid.".format(uri_field.upper(), future_to_url[future]))
                             self.errors.add("GEN-E06")
+
+            # Check for duplicated FASTQ_URI values
+            uniques = []
+            duplicates = []
+            for uri in uris + non_uris:
+                if uri not in uniques:
+                    uniques.append(uri)
+                else:
+                    duplicates.append(uri)
+            if duplicates:
+                for uri in duplicates:
+                    logger.error(f"{uri} is duplicated.")
+                    self.errors.add("GEN-E16")
 
     def run_singlecell_checks(self, logger):
         """Check requirements for loading an experiment into Single Cell Expression Atlas"""
@@ -133,7 +158,7 @@ class AtlasMAGETABChecker:
                         self.errors.add("SC-E02")
             elif re.search("EAExpectedClusters", k, flags=re.IGNORECASE):
                 for number in attribs:
-                    if number and not re.match("^\d+$", number):
+                    if number and not re.match(r"^\d+$", number):
                         logger.error("Expected clusters value \"{}\" is not numerical.".format(number))
                         self.errors.add("SC-E03")
             elif re.search("EAExperimentType", k, flags=re.IGNORECASE):
@@ -218,13 +243,12 @@ class AtlasMAGETABChecker:
                                 if droplet_value not in allowed_read_values:
                                     logger.error(f"Read value \"{droplet_value}\" for \"{dt}\" is not allowed.")
                                     self.errors.add("SC-E13")
+
                 droplet_numerical_terms = get_controlled_vocabulary("optional_droplet_numerical_fields", "atlas", logger)
-                print(droplet_numerical_terms)
+                # check for numerical values in the optional comments
                 for dnt in droplet_numerical_terms:
-                    # check for numerical values
                     droplet_term_values = {row[i] for row in self.sdrf for i, c in enumerate(self.sdrf_header)
                                            if self.normalise_header(dnt) == self.normalise_header(c)}
-                    print(droplet_term_values)
                     for droplet_value in droplet_term_values:
                         if not re.match(r"^\d+$", droplet_value):
                             logger.error(f"Value \"{droplet_value}\" for \"{dnt}\" is not a numerical value.")
