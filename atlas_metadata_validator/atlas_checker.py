@@ -206,7 +206,7 @@ class AtlasMAGETABChecker:
                     logger.warn("Experiment contains more than 1 single cell library construction protocol.")
                 for protocol in sc_protocol_values:
                     if protocol.lower() not in library_construction_terms.get("all", []):
-                        logger.error("Library construction protocol is not supported for Expression Atlas."
+                        logger.error("Library construction protocol \"{}\" is not supported for Expression Atlas."
                                      .format(protocol))
                         self.errors.add("SC-E06")
             # Not all rows should be "not OK"
