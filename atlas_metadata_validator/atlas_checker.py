@@ -5,6 +5,7 @@ import re
 from collections import defaultdict
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor as PoolExecutor
+from itertools import filterfalse
 
 from atlas_metadata_validator.parser import simple_idf_parser, get_name, get_value, read_sdrf_file
 from atlas_metadata_validator.fetch import get_taxon, is_valid_url, get_controlled_vocabulary
@@ -240,23 +241,22 @@ class AtlasMAGETABChecker:
                         self.errors.add("SC-E10")
                     else:
                         # Check that the values match the allowed
-                        droplet_term_values = {row[i] for row in self.sdrf for i, c in enumerate(self.sdrf_header)
-                                               if self.normalise_header(dt) == self.normalise_header(c)}
+                        droplet_term_values = self.get_sdrf_values_for_field(dt, unique_only=True)
                         if dt.endswith("read"):
-                            for droplet_value in droplet_term_values:
-                                if droplet_value not in allowed_read_values:
-                                    logger.error(f"Read value \"{droplet_value}\" for \"{dt}\" is not allowed.")
-                                    self.errors.add("SC-E13")
+                            non_match = droplet_term_values.difference(set(allowed_read_values))
+                            for droplet_value in non_match:
+                                logger.error(f"Read value \"{droplet_value}\" for \"{dt}\" is not allowed.")
+                                self.errors.add("SC-E13")
 
-                droplet_numerical_terms = get_controlled_vocabulary("optional_droplet_numerical_fields", "atlas", logger)
                 # check for numerical values in the optional comments
+                droplet_numerical_terms = get_controlled_vocabulary("optional_droplet_numerical_fields", "atlas", logger)
+                numerical_value_pattern = re.compile(r"^\d+$")
                 for dnt in droplet_numerical_terms:
-                    droplet_term_values = {row[i] for row in self.sdrf for i, c in enumerate(self.sdrf_header)
-                                           if self.normalise_header(dnt) == self.normalise_header(c)}
-                    for droplet_value in droplet_term_values:
-                        if not re.match(r"^\d+$", droplet_value):
-                            logger.error(f"Value \"{droplet_value}\" for \"{dnt}\" is not a numerical value.")
-                            self.errors.add("SC-E14")
+                    droplet_term_values = self.get_sdrf_values_for_field(dnt, unique_only=True)
+                    non_match = filterfalse(numerical_value_pattern.match, droplet_term_values)
+                    for droplet_value in non_match:
+                        logger.error(f"Value \"{droplet_value}\" for \"{dnt}\" is not a numerical value.")
+                        self.errors.add("SC-E14")
 
                 break
 
@@ -298,3 +298,13 @@ class AtlasMAGETABChecker:
                     sample2datafile[row[sample_index]].append(row[data_index])
 
         return sample2datafile
+
+    def get_sdrf_values_for_field(self, field_name, unique_only=False):
+        """Look up the values for a given SDRF field name (term inside square brackets for Comments/Characteristics)
+        and return them as a list. If the unique_only option is set to True, return a set"""
+        if unique_only:
+            return set(self.get_sdrf_values_for_field(field_name))
+        return [row[i]
+                for row in self.sdrf
+                for i, c in enumerate(self.sdrf_header)
+                if self.normalise_header(field_name) == self.normalise_header(c)]
