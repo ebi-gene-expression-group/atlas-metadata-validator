@@ -89,27 +89,44 @@ class AtlasMAGETABChecker:
                 logger.error("No ENA_RUN or RUN column found in SDRF.")
                 self.errors.add("GEN-E05")
 
-        # FASTQ_URIs must be valid
-        if not self.skip_file_checks:
-            logger.info("Checking FASTQ URIs. This may take a while... (Skip this check with -x option)")
-            uri_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields")
-            uri_pattern = re.compile(r"^(https?|ftp)://", re.IGNORECASE)  # Identify based on start of string
-            non_uri_pattern = re.compile(r"^[^/\s]+$")  # Not allowing slashes and spaces if we don't have a web address
-            uris = []
-            non_uris = []
-            for uri_field in uri_fields:
-                uri_index = [i for i, c in enumerate(self.sdrf_header)
-                             if re.search(uri_field, c, flags=re.IGNORECASE)]
-                for row in self.sdrf:
-                    for i in uri_index:
-                        if re.match(uri_pattern, str(row[i])):
-                            uris.append(row[i])
-                        elif not re.match(non_uri_pattern, row[i]):
-                            logger.error("{} {} is not in the right format.".format(uri_field.upper(), row[i]))
-                            self.errors.add("GEN-E15")
-                        else:
-                            non_uris.append(row[i])
+        # FASTQ_URIs checks
+        # We allow two types of values here: web URIs ("uris") or submitted file names ("non_uris")
+        uri_pattern = re.compile(r"^(https?|ftp)://", re.IGNORECASE)  # Identify based on start of string
+        non_uri_pattern = re.compile(r"^[^/\s]+$")  # Not allowing slashes and spaces if we don't have a web address
 
+        uri_dict = defaultdict(list)
+        uris_to_check = defaultdict(set)
+
+        # Fetch the allowed field names for raw data URIs and get values from SDRF (store in uri_dict)
+        uri_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields")
+        for uri_field in uri_fields:
+            uri_index = [i for i, c in enumerate(self.sdrf_header)
+                         if re.search(uri_field, c, flags=re.IGNORECASE)]
+            for row in self.sdrf:
+                for i in uri_index:
+                    uri_dict[uri_field].append(row[i])
+
+        # Check format of the strings and collect the web URIs for look up
+        for uri_field, uri_list in uri_dict.items():
+            for uri in uri_list:
+                if re.match(uri_pattern, str(uri)):
+                    uris_to_check[uri_field].add(uri)
+                elif not re.match(non_uri_pattern, uri):
+                    logger.error("{} {} is not in the right format.".format(uri_field.upper(), uri))
+                    self.errors.add("GEN-E15")
+
+        # Check for duplicated URI values
+        all_uris = [uri for uri_field, uri_list in uri_dict.items() for uri in uri_list]
+        duplicates = {uri for uri in all_uris if all_uris.count(uri) > 1}
+        if duplicates:
+            for uri in duplicates:
+                logger.error(f"{uri} is duplicated.")
+                self.errors.add("GEN-E16")
+
+        # Looking up web URIs if they are valid web addresses
+        if not self.skip_file_checks:
+            logger.info("Checking for valid web URIs. This may take a while... (Skip this check with -x option)")
+            for uri_field, uris in uris_to_check.items():
                 # Using multi-threading to speed up the validation of web URIs
                 with PoolExecutor(max_workers=30) as executor:
                     executor.submit(is_valid_url, uris, logger)
@@ -118,19 +135,6 @@ class AtlasMAGETABChecker:
                         if future.result() is False:
                             logger.error("{} {} is not valid.".format(uri_field.upper(), future_to_url[future]))
                             self.errors.add("GEN-E06")
-
-            # Check for duplicated FASTQ_URI values
-            uniques = []
-            duplicates = []
-            for uri in uris + non_uris:
-                if uri not in uniques:
-                    uniques.append(uri)
-                else:
-                    duplicates.append(uri)
-            if duplicates:
-                for uri in duplicates:
-                    logger.error(f"{uri} is duplicated.")
-                    self.errors.add("GEN-E16")
 
     def run_singlecell_checks(self, logger):
         """Check requirements for loading an experiment into Single Cell Expression Atlas"""
