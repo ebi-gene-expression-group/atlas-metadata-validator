@@ -5,6 +5,7 @@ import re
 from collections import defaultdict
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor as PoolExecutor
+from itertools import filterfalse
 
 from atlas_metadata_validator.parser import simple_idf_parser, get_name, get_value, read_sdrf_file
 from atlas_metadata_validator.fetch import get_taxon, is_valid_url, get_controlled_vocabulary
@@ -89,16 +90,45 @@ class AtlasMAGETABChecker:
                 logger.error("No ENA_RUN or RUN column found in SDRF.")
                 self.errors.add("GEN-E05")
 
-        # FASTQ_URIs must be valid
+        # FASTQ_URIs checks
+        # We allow two types of values here: web URIs ("uris") or submitted file names ("non_uris")
+        uri_pattern = re.compile(r"^(https?|ftp)://", re.IGNORECASE)  # Identify based on start of string
+        non_uri_pattern = re.compile(r"^[^/\s]+$")  # Not allowing slashes and spaces if we don't have a web address
+
+        uri_dict = defaultdict(list)
+        uris_to_check = defaultdict(set)
+
+        # Fetch the allowed field names for raw data URIs and get values from SDRF (store in uri_dict)
+        uri_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields")
+        for uri_field in uri_fields:
+            uri_index = [i for i, c in enumerate(self.sdrf_header)
+                         if re.search(uri_field, c, flags=re.IGNORECASE)]
+            for row in self.sdrf:
+                for i in uri_index:
+                    uri_dict[uri_field].append(row[i])
+
+        # Check format of the strings and collect the web URIs for look up
+        for uri_field, uri_list in uri_dict.items():
+            for uri in uri_list:
+                if re.match(uri_pattern, str(uri)):
+                    uris_to_check[uri_field].add(uri)
+                elif not re.match(non_uri_pattern, uri):
+                    logger.error("{} {} is not in the right format.".format(uri_field.upper(), uri))
+                    self.errors.add("GEN-E15")
+
+        # Check for duplicated URI values
+        all_uris = [uri for uri_field, uri_list in uri_dict.items() for uri in uri_list]
+        duplicates = {uri for uri in all_uris if all_uris.count(uri) > 1}
+        if duplicates:
+            for uri in duplicates:
+                logger.error(f"{uri} is duplicated.")
+                self.errors.add("GEN-E16")
+
+        # Looking up web URIs if they are valid web addresses
         if not self.skip_file_checks:
-            logger.info("Checking FASTQ URIs. This may take a while... (Skip this check with -x option)")
-            uri_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields")
-            for uri_field in uri_fields:
-                uri_index = [i for i, c in enumerate(self.sdrf_header)
-                             if re.search(uri_field, c, flags=re.IGNORECASE)]
-                uris = [row[i] for row in self.sdrf for i in uri_index
-                        if re.match(re.compile("^ftp|^http", re.IGNORECASE), str(row[i]))]
-                # Using multi-threading to speed this up
+            logger.info("Checking for valid web URIs. This may take a while... (Skip this check with -x option)")
+            for uri_field, uris in uris_to_check.items():
+                # Using multi-threading to speed up the validation of web URIs
                 with PoolExecutor(max_workers=30) as executor:
                     executor.submit(is_valid_url, uris, logger)
                     future_to_url = {executor.submit(is_valid_url, uri, logger): uri for uri in uris}
@@ -133,7 +163,7 @@ class AtlasMAGETABChecker:
                         self.errors.add("SC-E02")
             elif re.search("EAExpectedClusters", k, flags=re.IGNORECASE):
                 for number in attribs:
-                    if number and not re.match("^\d+$", number):
+                    if number and not re.match(r"^\d+$", number):
                         logger.error("Expected clusters value \"{}\" is not numerical.".format(number))
                         self.errors.add("SC-E03")
             elif re.search("EAExperimentType", k, flags=re.IGNORECASE):
@@ -176,7 +206,7 @@ class AtlasMAGETABChecker:
                     logger.warn("Experiment contains more than 1 single cell library construction protocol.")
                 for protocol in sc_protocol_values:
                     if protocol.lower() not in library_construction_terms.get("all", []):
-                        logger.error("Library construction protocol is not supported for Expression Atlas."
+                        logger.error("Library construction protocol \"{}\" is not supported for Expression Atlas."
                                      .format(protocol))
                         self.errors.add("SC-E06")
             # Not all rows should be "not OK"
@@ -204,10 +234,30 @@ class AtlasMAGETABChecker:
         for protocol in sc_protocol_values:
             if protocol.lower() in library_construction_terms.get("droplet"):
                 droplet_terms = get_controlled_vocabulary("required_droplet_sdrf_fields", "atlas", logger)
+                allowed_read_values = get_controlled_vocabulary("allowed_read_values", "atlas", logger)
                 for dt in droplet_terms:
                     if dt not in self.sdrf_values:
                         logger.error("Required SDRF droplet field \"{}\" not found.".format(dt))
                         self.errors.add("SC-E10")
+                    else:
+                        # Check that the values match the allowed
+                        droplet_term_values = self.get_sdrf_values_for_field(dt, unique_only=True)
+                        if dt.endswith("read"):
+                            non_match = droplet_term_values.difference(set(allowed_read_values))
+                            for droplet_value in non_match:
+                                logger.error(f"Read value \"{droplet_value}\" for \"{dt}\" is not allowed.")
+                                self.errors.add("SC-E13")
+
+                # check for numerical values in the optional comments
+                droplet_numerical_terms = get_controlled_vocabulary("optional_droplet_numerical_fields", "atlas", logger)
+                numerical_value_pattern = re.compile(r"^\d+$")
+                for dnt in droplet_numerical_terms:
+                    droplet_term_values = self.get_sdrf_values_for_field(dnt, unique_only=True)
+                    non_match = filterfalse(numerical_value_pattern.match, droplet_term_values)
+                    for droplet_value in non_match:
+                        logger.error(f"Value \"{droplet_value}\" for \"{dnt}\" is not a numerical value.")
+                        self.errors.add("SC-E14")
+
                 break
 
     def check_all(self, logger=logging.getLogger()):
@@ -248,3 +298,13 @@ class AtlasMAGETABChecker:
                     sample2datafile[row[sample_index]].append(row[data_index])
 
         return sample2datafile
+
+    def get_sdrf_values_for_field(self, field_name, unique_only=False):
+        """Look up the values for a given SDRF field name (term inside square brackets for Comments/Characteristics)
+        and return them as a list. If the unique_only option is set to True, return a set"""
+        if unique_only:
+            return set(self.get_sdrf_values_for_field(field_name))
+        return [row[i]
+                for row in self.sdrf
+                for i, c in enumerate(self.sdrf_header)
+                if self.normalise_header(field_name) == self.normalise_header(c)]
