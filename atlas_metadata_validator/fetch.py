@@ -8,6 +8,7 @@ import time
 import urllib
 import socket
 import git
+import ftplib
 
 # To store organisms that we have already looked-up in the taxonomy (this is slow...)
 organism_lookup = {}
