@@ -9,7 +9,6 @@ import urllib
 import socket
 import git
 
-
 # To store organisms that we have already looked-up in the taxonomy (this is slow...)
 organism_lookup = {}
 
@@ -41,29 +40,58 @@ def get_taxon(organism, logger=logging.getLogger()):
     else:
         return organism_lookup.get(organism)
 
+def is_valid_ftp(url, logger=None, retry=10):
+    """Check if a given FTP file exists without downloading the page/file
+    """
 
+    parsed=urllib.urlparse(url)
+    domain=parsed.netloc
+    path=parsed.path
+    scheme=parsed.scheme
+    if scheme != 'ftp':
+        raise Exception("{} is not an FTP link".format(url))
+    f = ftplib.FTP(domain)
+    f.login("anonymous", "anonymous")
+    try:
+        logger.debug("Checking {}... Done.".format(url))
+        f.cwd(os.path.dirname(path))
+        file_present = False
+        if os.path.basename(parsed.path) in f.nlst():
+            file_present = True	
+        f.quit()
+        return file_present
+    except ftplib.all_errors as e:
+        logger.debug("{} not a valid path on {}".format(path, domain))
+        f.quit()
+        return False
+    
 def is_valid_url(url, logger=None, retry=10):
     """Check if a given URL exists without downloading the page/file
 
-    For HTTP and HTTPS URLs, urllib.requests returns a http.client.HTTPResponse object,
-    for FTP URLs it returns a urllib.response.addinfourl object
+    For HTTP and HTTPS URLs, urllib.requests returns a http.client.HTTPResponse object.
+    For FTP URLs we check with ftplib to avoid incomplete requests.
     """
 
-    # The global timeout for waiting for the response from the server before giving up
-    timeout = 2
-    socket.setdefaulttimeout(timeout)
+    parsed=urllib.urlparse(url)
+    if parsed.scheme == 'ftp:
+        return is_valid_ftp(url, logger=logger)
+    else
+    
+        # The global timeout for waiting for the response from the server before giving up
+        timeout = 2
+        socket.setdefaulttimeout(timeout)
 
-    try:
-        r = urllib.request.urlopen(url)
-        logger.debug("Checking {}... Done.".format(url))
-        if r:
-            return True
-    except urllib.error.URLError:
-        if retry > 0:
-            logger.debug("URI check failed for {}. Retrying {} more time(s).".format(url, str(retry)))
-            time.sleep(60/retry)
-            return is_valid_url(url, logger, retry-1)
-        return False
+        try:
+            r = urllib.request.urlopen(url)
+            logger.debug("Checking {}... Done.".format(url))
+            if r:
+                return True
+        except urllib.error.URLError:
+            if retry > 0:
+                logger.debug("URI check failed for {}. Retrying {} more time(s).".format(url, str(retry)))
+                time.sleep(60/retry)
+                return is_valid_url(url, logger, retry-1)
+            return False
 
 
 def get_controlled_vocabulary(category, resource="atlas", logger=None):
