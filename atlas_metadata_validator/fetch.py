@@ -41,14 +41,15 @@ def get_taxon(organism, logger=logging.getLogger()):
     else:
         return organism_lookup.get(organism)
 
-def is_valid_ftp(url, logger=None, retry=10):
+
+def is_valid_ftp(url, logger=None):
     """Check if a given FTP file exists without downloading the page/file
     """
 
-    parsed=urllib.urlparse(url)
-    domain=parsed.netloc
-    path=parsed.path
-    scheme=parsed.scheme
+    parsed = urllib.parse.urlparse(url)
+    domain = parsed.netloc
+    path = parsed.path
+    scheme = parsed.scheme
     if scheme != 'ftp':
         raise Exception("{} is not an FTP link".format(url))
     f = ftplib.FTP(domain)
@@ -65,7 +66,8 @@ def is_valid_ftp(url, logger=None, retry=10):
         logger.debug("{} not a valid path on {}".format(path, domain))
         f.quit()
         return False
-    
+
+
 def is_valid_url(url, logger=None, retry=10):
     """Check if a given URL exists without downloading the page/file
 
@@ -73,11 +75,10 @@ def is_valid_url(url, logger=None, retry=10):
     For FTP URLs we check with ftplib to avoid incomplete requests.
     """
 
-    parsed=urllib.urlparse(url)
-    if parsed.scheme == 'ftp:
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme == "ftp":
         return is_valid_ftp(url, logger=logger)
-    else
-    
+    else:
         # The global timeout for waiting for the response from the server before giving up
         timeout = 2
         socket.setdefaulttimeout(timeout)
