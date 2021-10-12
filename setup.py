@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="atlas-metadata-validator",
-    version="1.6.0",
+    version="1.6.1",
     author="Anja Füllgrabe",
     author_email="anjaf@ebi.ac.uk",
     description="A MAGE-TAB validator for Expression Atlas and Single Cell Expression Atlas",
