@@ -3,12 +3,10 @@
 import logging
 import re
 from collections import defaultdict
-import concurrent.futures
-from concurrent.futures import ThreadPoolExecutor as PoolExecutor
 from itertools import filterfalse
 
 from atlas_metadata_validator.parser import simple_idf_parser, get_name, get_value, read_sdrf_file
-from atlas_metadata_validator.fetch import get_taxon, is_valid_url, get_controlled_vocabulary
+from atlas_metadata_validator.fetch import get_taxon, check_urls, get_controlled_vocabulary
 
 
 class AtlasMAGETABChecker:
@@ -127,15 +125,11 @@ class AtlasMAGETABChecker:
         # Looking up web URIs if they are valid web addresses
         if not self.skip_file_checks:
             logger.info("Checking for valid web URIs. This may take a while... (Skip this check with -x option)")
-            for uri_field, uris in uris_to_check.items():
-                # Using multi-threading to speed up the validation of web URIs
-                with PoolExecutor(max_workers=30) as executor:
-                    executor.submit(is_valid_url, uris, logger)
-                    future_to_url = {executor.submit(is_valid_url, uri, logger): uri for uri in uris}
-                    for future in concurrent.futures.as_completed(future_to_url):
-                        if future.result() is False:
-                            logger.error("{} {} is not valid.".format(uri_field.upper(), future_to_url[future]))
-                            self.errors.add("GEN-E06")
+            invalid_uris = check_urls(logger, uris_to_check)
+            for uri_field in invalid_uris:
+                for uri in invalid_uris[uri_field]:
+                    logger.error("{} {} is not valid.".format(uri_field.upper(), uri))
+                    self.errors.add("GEN-E06")
 
     def run_singlecell_checks(self, logger):
         """Check requirements for loading an experiment into Single Cell Expression Atlas"""
