@@ -16,6 +16,7 @@ class AtlasMAGETABChecker:
         self.submission_type = submission_type
         self.skip_file_checks = skip_file_checks
         self.is_hca = is_hca
+        self.is_anndata = False
         self.errors = set()
 
         # Read in IDF/SDRF files
@@ -89,47 +90,51 @@ class AtlasMAGETABChecker:
                 self.errors.add("GEN-E05")
 
         # FASTQ_URIs checks
-        # We allow two types of values here: web URIs ("uris") or submitted file names ("non_uris")
-        uri_pattern = re.compile(r"^(https?|ftp)://", re.IGNORECASE)  # Identify based on start of string
-        non_uri_pattern = re.compile(r"^[^/\s]+$")  # Not allowing slashes and spaces if we don't have a web address
+        if "E-ANND" in idf_file: # skip for E-ANND-x
+            self.is_anndata = True
+            logger.info("Skip FASTQ_URIs checks for AnnData experiments")
+        else:
+            # We allow two types of values here: web URIs ("uris") or submitted file names ("non_uris")
+            uri_pattern = re.compile(r"^(https?|ftp)://", re.IGNORECASE)  # Identify based on start of string
+            non_uri_pattern = re.compile(r"^[^/\s]+$")  # Not allowing slashes and spaces if we don't have a web address
 
-        uri_dict = defaultdict(list)
-        uris_to_check = defaultdict(set)
+            uri_dict = defaultdict(list)
+            uris_to_check = defaultdict(set)
 
-        # Fetch the allowed field names for raw data URIs and get values from SDRF (store in uri_dict)
-        uri_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields")
-        for uri_field in uri_fields:
-            uri_index = [i for i, c in enumerate(self.sdrf_header)
-                         if re.search(uri_field, c, flags=re.IGNORECASE)]
-            for row in self.sdrf:
-                for i in uri_index:
-                    uri_dict[uri_field].append(row[i])
+            # Fetch the allowed field names for raw data URIs and get values from SDRF (store in uri_dict)
+            uri_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields")
+            for uri_field in uri_fields:
+                uri_index = [i for i, c in enumerate(self.sdrf_header)
+                             if re.search(uri_field, c, flags=re.IGNORECASE)]
+                for row in self.sdrf:
+                    for i in uri_index:
+                        uri_dict[uri_field].append(row[i])
 
-        # Check format of the strings and collect the web URIs for look up
-        for uri_field, uri_list in uri_dict.items():
-            for uri in uri_list:
-                if re.match(uri_pattern, str(uri)):
-                    uris_to_check[uri_field].add(uri)
-                elif not re.match(non_uri_pattern, uri):
-                    logger.error("{} {} is not in the right format.".format(uri_field.upper(), uri))
-                    self.errors.add("GEN-E15")
+            # Check format of the strings and collect the web URIs for look up
+            for uri_field, uri_list in uri_dict.items():
+                for uri in uri_list:
+                    if re.match(uri_pattern, str(uri)):
+                        uris_to_check[uri_field].add(uri)
+                    elif not re.match(non_uri_pattern, uri):
+                        logger.error("{} {} is not in the right format.".format(uri_field.upper(), uri))
+                        self.errors.add("GEN-E15")
 
-        # Check for duplicated URI values
-        all_uris = [uri for uri_field, uri_list in uri_dict.items() for uri in uri_list]
-        duplicates = {uri for uri in all_uris if all_uris.count(uri) > 1}
-        if duplicates:
-            for uri in duplicates:
-                logger.error(f"{uri} is duplicated.")
-                self.errors.add("GEN-E16")
+            # Check for duplicated URI values
+            all_uris = [uri for uri_field, uri_list in uri_dict.items() for uri in uri_list]
+            duplicates = {uri for uri in all_uris if all_uris.count(uri) > 1}
+            if duplicates:
+                for uri in duplicates:
+                    logger.error(f"{uri} is duplicated.")
+                    self.errors.add("GEN-E16")
 
-        # Looking up web URIs if they are valid web addresses
-        if not self.skip_file_checks:
-            logger.info("Checking for valid web URIs. This may take a while... (Skip this check with -x option)")
-            invalid_uris = check_urls(logger, uris_to_check)
-            for uri_field in invalid_uris:
-                for uri in invalid_uris[uri_field]:
-                    logger.error("{} {} is not valid.".format(uri_field.upper(), uri))
-                    self.errors.add("GEN-E06")
+            # Looking up web URIs if they are valid web addresses
+            if not self.skip_file_checks:
+                logger.info("Checking for valid web URIs. This may take a while... (Skip this check with -x option)")
+                invalid_uris = check_urls(logger, uris_to_check)
+                for uri_field in invalid_uris:
+                    for uri in invalid_uris[uri_field]:
+                        logger.error("{} {} is not valid.".format(uri_field.upper(), uri))
+                        self.errors.add("GEN-E06")
 
     def run_singlecell_checks(self, logger):
         """Check requirements for loading an experiment into Single Cell Expression Atlas"""
@@ -177,16 +182,19 @@ class AtlasMAGETABChecker:
                 logger.error("Required SDRF field \"{}\" not found.".format(field))
                 self.errors.add("SC-E05")
 
-        # Require at least one of those fields to be present
-        required_download_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields", "atlas", logger)
-        found_download_field = False
-        for field in required_download_fields:
-            if field.lower() in self.sdrf_values or get_name(field) in self.header_dict:
-                found_download_field = True
-                break
-        if not found_download_field:
-            logger.error("Required data download SDRF field \"{}\" not found.".format(" or ".join(required_download_fields)))
-            self.errors.add("SC-E12")
+        # Require at least one of those raw data fields to be present except for AnnData experiments
+        if self.is_anndata:
+            logger.debug("Found AnnData ingested experiment, no raw data SDRF fields required")
+        else:
+            required_download_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields", "atlas", logger)
+            found_download_field = False
+            for field in required_download_fields:
+                if field.lower() in self.sdrf_values or get_name(field) in self.header_dict:
+                    found_download_field = True
+                    break
+            if not found_download_field:
+                logger.error("Required data download SDRF field \"{}\" not found.".format(" or ".join(required_download_fields)))
+                self.errors.add("SC-E12")
 
         # Valid SDRF values
         library_construction_terms = get_controlled_vocabulary("singlecell_library_construction", "atlas", logger)
