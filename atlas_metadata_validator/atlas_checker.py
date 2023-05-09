@@ -184,7 +184,7 @@ class AtlasMAGETABChecker:
 
         # Require at least one of those raw data fields to be present except for AnnData experiments
         if self.is_anndata:
-            logger.debug("Found AnnData ingested experiment, no raw data SDRF fields required")
+            logger.info("For AnnData ingestion, no raw data SDRF fields required")
         else:
             required_download_fields = get_controlled_vocabulary("raw_data_download_sdrf_fields", "atlas", logger)
             found_download_field = False
