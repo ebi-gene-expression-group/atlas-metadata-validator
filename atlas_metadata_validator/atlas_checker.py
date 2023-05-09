@@ -90,7 +90,7 @@ class AtlasMAGETABChecker:
                 self.errors.add("GEN-E05")
 
         # FASTQ_URIs checks
-        if "E-ANND" in idf_file: # skip for E-ANND-x
+        if "E-ANND" in self.idf_file: # skip for E-ANND-x
             self.is_anndata = True
             logger.info("Skip FASTQ_URIs checks for AnnData experiments")
         else:
@@ -239,8 +239,11 @@ class AtlasMAGETABChecker:
                 allowed_read_values = get_controlled_vocabulary("allowed_read_values", "atlas", logger)
                 for dt in droplet_terms:
                     if dt not in self.sdrf_values:
-                        logger.error("Required SDRF droplet field \"{}\" not found.".format(dt))
-                        self.errors.add("SC-E10")
+                        if self.is_anndata:
+                            logger.warn("Required SDRF droplet field \"{}\" not found. This is optional for AnnData ingestion.".format(dt))
+                        else:
+                            logger.error("Required SDRF droplet field \"{}\" not found.".format(dt))
+                            self.errors.add("SC-E10")
                     else:
                         # Check that the values match the allowed
                         droplet_term_values = self.get_sdrf_values_for_field(dt, unique_only=True)
